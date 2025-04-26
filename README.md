@@ -107,7 +107,7 @@ Average time: 48517 ticks
 This project is compatible with Mac OS 15.4.1:
 ```
 ╰─$ md5 runtime
-MD5 (runtime) = e957092fad313bf48fee3ab985b73742
+MD5 (runtime) = c6b7650638eaf4d15bd56b9aae282b11
 ```
 
 ### Research Notes

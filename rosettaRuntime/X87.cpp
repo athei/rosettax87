@@ -78,11 +78,11 @@ void* translator_get_branch_slots_count(TranslationResult const* a1) {
   // LOG(1, "translator_get_branch_slots_count\n", 34);
   return orig_translator_get_branch_slots_count(a1);
 }
-void* translator_get_branch_entries(TranslationResult const* a1) {
+translator_get_branch_entries_result translator_get_branch_entries(TranslationResult const* a1) {
   // LOG(1, "translator_get_branch_entries\n", 29);
   return orig_translator_get_branch_entries(a1);
 }
-void* translator_get_instruction_offsets(TranslationResult const* a1) {
+translator_get_instruction_offsets_result translator_get_instruction_offsets(TranslationResult const* a1) {
   // LOG(1, "translator_get_instruction_offsets\n", 35);
   return orig_translator_get_instruction_offsets(a1);
 }

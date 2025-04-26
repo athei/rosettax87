@@ -85,10 +85,22 @@ using translator_get_branch_slots_offset_t = decltype(&translator_get_branch_slo
 void* translator_get_branch_slots_count(TranslationResult const*);
 using translator_get_branch_slots_count_t = decltype(&translator_get_branch_slots_count);
 
-void* translator_get_branch_entries(TranslationResult const*);
+struct translator_get_branch_entries_result {
+  uintptr_t _00;
+  uintptr_t _08;
+  uintptr_t _10;
+};
+
+translator_get_branch_entries_result translator_get_branch_entries(TranslationResult const*);
 using translator_get_branch_entries_t = decltype(&translator_get_branch_entries);
 
-void* translator_get_instruction_offsets(TranslationResult const*);
+struct translator_get_instruction_offsets_result {
+  uintptr_t _00;
+  uintptr_t _08;
+  uintptr_t _10;
+};
+
+translator_get_instruction_offsets_result translator_get_instruction_offsets(TranslationResult const*);
 using translator_get_instruction_offsets_t = decltype(&translator_get_instruction_offsets);
 
 void* translator_apply_fixups(TranslationResult*, unsigned char*, unsigned long long);

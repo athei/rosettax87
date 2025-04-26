@@ -77,11 +77,11 @@ void* translator_get_branch_slots_count(TranslationResult const* a1) {
   // LOG(1, "translator_get_branch_slots_count\n", 34);
   return orig_translator_get_branch_slots_count(a1);
 }
-void* translator_get_branch_entries(TranslationResult const* a1) {
+translator_get_branch_entries_result translator_get_branch_entries(TranslationResult const* a1) {
   // LOG(1, "translator_get_branch_entries\n", 29);
   return orig_translator_get_branch_entries(a1);
 }
-void* translator_get_instruction_offsets(TranslationResult const* a1) {
+translator_get_instruction_offsets_result translator_get_instruction_offsets(TranslationResult const* a1) {
   // LOG(1, "translator_get_instruction_offsets\n", 35);
   return orig_translator_get_instruction_offsets(a1);
 }
@@ -362,9 +362,9 @@ X87ResultStatusWord x87_fst_fp64(X87State const* a1) {
   return orig_x87_fst_fp64(a1);
 }
 
-void x87_fst_fp80(X87State const* a1) {
+X87Float80 x87_fst_fp80(X87State const* a1) {
   LOG(1, "x87_fst_fp80\n", 14);
-  orig_x87_fst_fp80(a1);
+  return orig_x87_fst_fp80(a1);
 }
 void x87_fsub_ST(X87State* a1, unsigned int a2, unsigned int a3, bool a4) {
   LOG(1, "x87_fsub_ST\n", 13);
