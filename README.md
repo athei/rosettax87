@@ -12,6 +12,7 @@ This is an experimental project that modifies Apple's Rosetta technology to use 
 - C compiler (clang)
 - CMake
 - Administrator privileges (for running helper service)
+- SIP disabled
 
 ## Building
 
@@ -118,7 +119,7 @@ If you want to examine `runtime` and `libRosettaRuntime` using `IDA PRO`, you ne
 
 ### Windows Applications Through Wine
 
-If you want to run a Windows application through wine, you can try this command (requires CrossOver):
+If you want to run a Windows application through wine, you can try this command (requires CrossOver, SIP disabled):
 ```╰─$ ./rosettax87 /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader PATH_TO_BINARY.exe```
 
 ## License
