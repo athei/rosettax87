@@ -1532,10 +1532,14 @@ void* translator_set_variant(bool a1) {
   return orig_translator_set_variant(a1);
 }
 
-void runtime_cpuid(uint16_t a1, uint16_t a2) {
-  LOG(1, "runtime_cpuid\n", 14);
-  orig_runtime_cpuid(a1, a2);
+void __attribute__((naked, used)) runtime_cpuid(uint16_t a1, uint16_t a2) {
+  asm volatile(
+    "adrp x22, _orig_runtime_cpuid@PAGE\n"
+    "ldr x22, [x22, _orig_runtime_cpuid@PAGEOFF]\n"
+    "br x22"
+  );
 }
+
 void runtime_wide_udiv_64(uint64_t a1, uint64_t a2, uint64_t a3) {
   LOG(1, "runtime_wide_udiv_64\n", 21);
   orig_runtime_wide_udiv_64(a1, a2, a3);

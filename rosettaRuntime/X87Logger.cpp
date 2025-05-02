@@ -22,71 +22,71 @@ void* register_runtime_routine_offsets(unsigned long long const* a1, char const*
   return orig_register_runtime_routine_offsets(a1, a2, a3);
 }
 void* translator_use_t8027_codegen(bool a1) {
-  // LOG(1, "translator_use_t8027_codegen\n", 28);
+  LOG(1, "translator_use_t8027_codegen\n", 28);
   return orig_translator_use_t8027_codegen(a1);
 }
 void* translator_reset(void) {
-  // LOG(1, "translator_reset\n", 17);
+  LOG(1, "translator_reset\n", 17);
   return orig_translator_reset();
 }
 void* ir_create_bad_access(unsigned long long a1, BadAccessKind a2) {
-  // LOG(1, "ir_create_bad_access\n", 22);
+  LOG(1, "ir_create_bad_access\n", 22);
   return orig_ir_create_bad_access(a1, a2);
 }
 void* ir_create(unsigned long long a1, unsigned int a2, unsigned int a3, TranslationMode a4, ExecutionMode a5) {
-  // LOG(1, "ir_create\n", 10);
+  LOG(1, "ir_create\n", 10);
   return orig_ir_create(a1, a2, a3, a4, a5);
 }
 void* module_free(ModuleResult const* a1) {
-  // LOG(1, "module_free\n", 12);
+  LOG(1, "module_free\n", 12);
   return orig_module_free(a1);
 }
 void* module_get_size(ModuleResult const* a1) {
-  // LOG(1, "module_get_size\n", 16);
+  LOG(1, "module_get_size\n", 16);
   return orig_module_get_size(a1);
 }
 void* module_is_bad_access(ModuleResult const* a1) {
-  // LOG(1, "module_is_bad_access\n", 21);
+  LOG(1, "module_is_bad_access\n", 21);
   return orig_module_is_bad_access(a1);
 }
 void* module_print(ModuleResult const* a1, int a2) {
-  // LOG(1, "module_print\n", 13);
+  LOG(1, "module_print\n", 13);
   return orig_module_print(a1, a2);
 }
 void* translator_translate(ModuleResult const* a1, TranslationMode a2) {
-  // LOG(1, "translator_translate\n", 21);
+  LOG(1, "translator_translate\n", 21);
   return orig_translator_translate(a1, a2);
 }
 void* translator_free(TranslationResult const* a1) {
-  // LOG(1, "translator_free\n", 17);
+  LOG(1, "translator_free\n", 17);
   return orig_translator_free(a1);
 }
 void* translator_get_data(TranslationResult const* a1) {
-  // LOG(1, "translator_get_data\n", 20);
+  LOG(1, "translator_get_data\n", 20);
   return orig_translator_get_data(a1);
 }
 void* translator_get_size(TranslationResult const* a1) {
-  // LOG(1, "translator_get_size\n", 20);
+  LOG(1, "translator_get_size\n", 20);
   return orig_translator_get_size(a1);
 }
 void* translator_get_branch_slots_offset(TranslationResult const* a1) {
-  // LOG(1, "translator_get_branch_slots_offset\n", 35);
+  LOG(1, "translator_get_branch_slots_offset\n", 35);
   return orig_translator_get_branch_slots_offset(a1);
 }
 void* translator_get_branch_slots_count(TranslationResult const* a1) {
-  // LOG(1, "translator_get_branch_slots_count\n", 34);
+  LOG(1, "translator_get_branch_slots_count\n", 34);
   return orig_translator_get_branch_slots_count(a1);
 }
 translator_get_branch_entries_result translator_get_branch_entries(TranslationResult const* a1) {
-  // LOG(1, "translator_get_branch_entries\n", 29);
+  LOG(1, "translator_get_branch_entries\n", 29);
   return orig_translator_get_branch_entries(a1);
 }
 translator_get_instruction_offsets_result translator_get_instruction_offsets(TranslationResult const* a1) {
-  // LOG(1, "translator_get_instruction_offsets\n", 35);
+  LOG(1, "translator_get_instruction_offsets\n", 35);
   return orig_translator_get_instruction_offsets(a1);
 }
 void* translator_apply_fixups(TranslationResult* a1, unsigned char* a2, unsigned long long a3) {
-  // LOG(1, "translator_apply_fixups\n", 24);
+  LOG(1, "translator_apply_fixups\n", 24);
   return orig_translator_apply_fixups(a1, a2, a3);
 }
 
@@ -424,65 +424,69 @@ void x87_fyl2xp1(X87State* a1) {
 }
 void* sse_pcmpestri(unsigned long long a1, unsigned long long a2, unsigned long long a3, unsigned long long a4,
                     unsigned char a5, long long a6, long long a7) {
-  // LOG(1, "sse_pcmpestri\n", 15);
+  LOG(1, "sse_pcmpestri\n", 15);
   return orig_sse_pcmpestri(a1, a2, a3, a4, a5, a6, a7);
 }
 void* sse_pcmpestrm(unsigned long long a1, unsigned long long a2, unsigned long long a3, unsigned long long a4,
                     unsigned char a5, long long a6, long long a7) {
-  // LOG(1, "sse_pcmpestrm\n", 15);
+  LOG(1, "sse_pcmpestrm\n", 15);
   return orig_sse_pcmpestrm(a1, a2, a3, a4, a5, a6, a7);
 }
 void* sse_pcmpistri(unsigned long long a1, unsigned long long a2, unsigned long long a3, unsigned long long a4,
                     unsigned char a5) {
-  // LOG(1, "sse_pcmpistri\n", 15);
+  LOG(1, "sse_pcmpistri\n", 15);
   return orig_sse_pcmpistri(a1, a2, a3, a4, a5);
 }
 void* sse_pcmpistrm(unsigned long long a1, unsigned long long a2, unsigned long long a3, unsigned long long a4,
                     unsigned char a5) {
-  // LOG(1, "sse_pcmpistrm\n", 15);
+  LOG(1, "sse_pcmpistrm\n", 15);
   return orig_sse_pcmpistrm(a1, a2, a3, a4, a5);
 }
 void* is_ldt_initialized(void) {
-  // LOG(1, "is_ldt_initialized\n", 19);
+  LOG(1, "is_ldt_initialized\n", 19);
   return orig_is_ldt_initialized();
 }
 void* get_ldt(unsigned int a1, unsigned int a2, void* a3, unsigned int a4) {
-  // LOG(1, "get_ldt\n", 9);
+  LOG(1, "get_ldt\n", 9);
   return orig_get_ldt(a1, a2, a3, a4);
 }
 void* set_ldt(unsigned int a1, unsigned int a2, void* const* a3, unsigned int a4) {
-  // LOG(1, "set_ldt\n", 9);
+  LOG(1, "set_ldt\n", 9);
   return orig_set_ldt(a1, a2, a3, a4);
 }
 void* execution_mode_for_code_segment_selector(unsigned int a1, unsigned short a2) {
-  // LOG(1, "execution_mode_for_code_segment_selector\n", 41);
+  LOG(1, "execution_mode_for_code_segment_selector\n", 41);
   return orig_execution_mode_for_code_segment_selector(a1, a2);
 }
 void* mov_segment(unsigned int a1, SegmentRegisters* a2, SegmentRegister a3, unsigned short a4) {
-  // LOG(1, "mov_segment\n", 13);
+  LOG(1, "mov_segment\n", 13);
   return orig_mov_segment(a1, a2, a3, a4);
 }
 void* abi_for_address(unsigned long long a1) {
-  // LOG(1, "abi_for_address\n", 17);
+  LOG(1, "abi_for_address\n", 17);
   return orig_abi_for_address(a1);
 }
 void* determine_state_recovery_action(unsigned int const* a1, unsigned int a2, unsigned int a3) {
-  // LOG(1, "determine_state_recovery_action\n", 32);
+  LOG(1, "determine_state_recovery_action\n", 32);
   return orig_determine_state_recovery_action(a1, a2, a3);
 }
 void* get_segment_limit(unsigned int a1, unsigned short a2) {
-  // LOG(1, "get_segment_limit\n", 18);
+  LOG(1, "get_segment_limit\n", 18);
   return orig_get_segment_limit(a1, a2);
 }
 void* translator_set_variant(bool a1) {
-  // LOG(1, "translator_set_variant\n", 23);
+  LOG(1, "translator_set_variant\n", 23);
   return orig_translator_set_variant(a1);
 }
 
-void runtime_cpuid(uint16_t a1, uint16_t a2) {
-  LOG(1, "runtime_cpuid\n", 14);
-  orig_runtime_cpuid(a1, a2);
+void __attribute__((naked, used)) runtime_cpuid(uint16_t a1, uint16_t a2) {
+  asm volatile(
+    "adrp x22, _orig_runtime_cpuid@PAGE\n"
+    "ldr x22, [x22, _orig_runtime_cpuid@PAGEOFF]\n"
+    "br x22"
+  );
 }
+
 void runtime_wide_udiv_64(uint64_t a1, uint64_t a2, uint64_t a3) {
   LOG(1, "runtime_wide_udiv_64\n", 21);
   orig_runtime_wide_udiv_64(a1, a2, a3);
