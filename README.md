@@ -12,7 +12,6 @@ This is an experimental project that modifies Apple's Rosetta technology to use 
 - C compiler (clang)
 - CMake
 - Administrator privileges (for running helper service)
-- SIP disabled
 
 ## Building
 
@@ -121,6 +120,25 @@ If you want to examine `runtime` and `libRosettaRuntime` using `IDA PRO`, you ne
 
 If you want to run a Windows application through wine, you can try this command (requires CrossOver, SIP disabled):
 ```╰─$ ./rosettax87 /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader PATH_TO_BINARY.exe```
+
+> ### 💡 Tip: Running Without Disabling SIP
+> 
+> If you don't want to turn off SIP, you can remove the code signature of wineloader:
+>
+> 1. **Create a copy of wineloader:**
+>    ```bash
+>    cp /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2
+>    ```
+>
+> 2. **Remove signature:**
+>    ```bash
+>    codesign --remove-signature /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2
+>    ```
+>
+> 3. **Now point rosettax87 to the copy:**
+>    ```bash
+>    ./rosettax87 /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2 PATH_TO_BINARY.exe
+>    ```
 
 ## License
 
