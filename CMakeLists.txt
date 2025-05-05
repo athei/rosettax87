@@ -9,20 +9,56 @@ add_executable(rosettax87 loader/main.cpp loader/macho_loader.cpp)
 
 add_executable(libRuntimeRosettax87 
     rosettaRuntime/main.cpp
-    rosettaRuntime/X87Register.cpp
+    rosettaRuntime/X87Float80.cpp
     rosettaRuntime/X87State.cpp
     rosettaRuntime/X87.cpp
-    #rosettaRuntime/X87Logger.cpp
-    # rosettaRuntime/X87Simple.cpp
     rosettaRuntime/Export.cpp
     rosettaRuntime/Log.cpp
-    rosettaRuntime/Neon.cpp
-    rosettaRuntime/mmath.cpp
 )
 
 target_include_directories(libRuntimeRosettax87 PRIVATE
     rosettaRuntime
 )
+
+# Add ExternalProject module
+include(ExternalProject)
+
+# Create directories before CMake references them
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/deps/lib)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/deps/include)
+
+# Build OpenLibm as a separate project with static library
+ExternalProject_Add(
+    openlibm_build
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/openlibm
+    CMAKE_ARGS 
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/deps
+        -DBUILD_SHARED_LIBS=OFF
+        -DCMAKE_C_FLAGS="-fno-stack-protector"
+    # Skip running the default install step that has errors
+    INSTALL_COMMAND ""
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/openlibm_build-prefix/src/openlibm_build-build/libopenlibm.a
+)
+
+# Add a custom step to copy the headers and static library manually
+ExternalProject_Add_Step(openlibm_build custom_install
+    COMMENT "Installing OpenLibm files"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/openlibm/include
+        ${CMAKE_BINARY_DIR}/deps/include
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_BINARY_DIR}/openlibm_build-prefix/src/openlibm_build-build/libopenlibm.a
+        ${CMAKE_BINARY_DIR}/deps/lib/
+    DEPENDEES build
+)
+
+# Create an imported target for the static library
+add_library(openlibm STATIC IMPORTED)
+add_dependencies(openlibm openlibm_build)
+set_target_properties(openlibm PROPERTIES
+    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/deps/lib/libopenlibm.a
+)
+target_include_directories(openlibm INTERFACE ${CMAKE_BINARY_DIR}/deps/include)
 
 target_link_options(libRuntimeRosettax87 PRIVATE
 "-Wl,-no_compact_unwind"
@@ -40,21 +76,13 @@ target_link_options(libRuntimeRosettax87 PRIVATE
 target_compile_options(libRuntimeRosettax87 PRIVATE
     "-fvisibility=hidden"
     "-O3" 
+    "-fno-stack-protector"
+    "-fno-builtin-sin"
+    "-fno-builtin-cos"
 )
+
 
 target_link_libraries(libRuntimeRosettax87 PRIVATE
-    fastermath
+    openlibm
 )
 
-add_library(fastermath STATIC
-    third_party/fastermath/src/exp.c
-)
-
-target_include_directories(fastermath PUBLIC
-    third_party/fastermath/include
-)
-
-target_compile_definitions(fastermath PRIVATE
-    "_FM_ALIGN=16"
-    "_FM_INTERNAL"
-)

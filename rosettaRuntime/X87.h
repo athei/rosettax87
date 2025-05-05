@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "X87Float80.h"
+
 struct SymbolList {};
 struct ThreadContextOffsets {};
 enum BadAccessKind {};
@@ -19,10 +21,7 @@ enum X87Constant {
   kLog2t = 5,
   kLog102 = 6,
 };
-struct X87Float80 {
-  uint64_t mantissa;
-  uint16_t exponent;
-};
+
 struct SegmentRegisters {};
 enum SegmentRegister {};
 struct X87State;
@@ -40,70 +39,58 @@ static_assert(sizeof(X87ResultStatusWord) == 0x10);
 void* init_library(SymbolList const*, unsigned long long, ThreadContextOffsets const*);
 using init_library_t = decltype(&init_library);
 
-void* register_runtime_routine_offsets(unsigned long long const*, char const**, unsigned long);
+void register_runtime_routine_offsets();
 using register_runtime_routine_offsets_t = decltype(&register_runtime_routine_offsets);
 
-void* translator_use_t8027_codegen(bool);
+void translator_use_t8027_codegen();
 using translator_use_t8027_codegen_t = decltype(&translator_use_t8027_codegen);
 
-void* translator_reset(void);
+void translator_reset();
 using translator_reset_t = decltype(&translator_reset);
 
-void* ir_create_bad_access(unsigned long long, BadAccessKind);
+void ir_create_bad_access();
 using ir_create_bad_access_t = decltype(&ir_create_bad_access);
 
-void* ir_create(unsigned long long, unsigned int, unsigned int, TranslationMode, ExecutionMode);
+void ir_create();
 using ir_create_t = decltype(&ir_create);
 
-void* module_free(ModuleResult const*);
+void module_free();
 using module_free_t = decltype(&module_free);
 
-void* module_get_size(ModuleResult const*);
+void module_get_size();
 using module_get_size_t = decltype(&module_get_size);
 
-void* module_is_bad_access(ModuleResult const*);
+void module_is_bad_access();
 using module_is_bad_access_t = decltype(&module_is_bad_access);
 
-void* module_print(ModuleResult const*, int);
+void module_print();
 using module_print_t = decltype(&module_print);
 
-void* translator_translate(ModuleResult const*, TranslationMode);
+void translator_translate();
 using translator_translate_t = decltype(&translator_translate);
 
-void* translator_free(TranslationResult const*);
+void translator_free();
 using translator_free_t = decltype(&translator_free);
 
-void* translator_get_data(TranslationResult const*);
+void translator_get_data();
 using translator_get_data_t = decltype(&translator_get_data);
 
-void* translator_get_size(TranslationResult const*);
+void translator_get_size();
 using translator_get_size_t = decltype(&translator_get_size);
 
-void* translator_get_branch_slots_offset(TranslationResult const*);
+void translator_get_branch_slots_offset();
 using translator_get_branch_slots_offset_t = decltype(&translator_get_branch_slots_offset);
 
-void* translator_get_branch_slots_count(TranslationResult const*);
+void translator_get_branch_slots_count();
 using translator_get_branch_slots_count_t = decltype(&translator_get_branch_slots_count);
 
-struct translator_get_branch_entries_result {
-  uintptr_t _00;
-  uintptr_t _08;
-  uintptr_t _10;
-};
-
-translator_get_branch_entries_result translator_get_branch_entries(TranslationResult const*);
+void translator_get_branch_entries();
 using translator_get_branch_entries_t = decltype(&translator_get_branch_entries);
 
-struct translator_get_instruction_offsets_result {
-  uintptr_t _00;
-  uintptr_t _08;
-  uintptr_t _10;
-};
-
-translator_get_instruction_offsets_result translator_get_instruction_offsets(TranslationResult const*);
+void translator_get_instruction_offsets();
 using translator_get_instruction_offsets_t = decltype(&translator_get_instruction_offsets);
 
-void* translator_apply_fixups(TranslationResult*, unsigned char*, unsigned long long);
+void translator_apply_fixups();
 using translator_apply_fixups_t = decltype(&translator_apply_fixups);
 
 void x87_init(X87State*);
@@ -331,52 +318,50 @@ using x87_fyl2x_t = decltype(&x87_fyl2x);
 void x87_fyl2xp1(X87State*);
 using x87_fyl2xp1_t = decltype(&x87_fyl2xp1);
 
-void* sse_pcmpestri(unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned char,
-                   long long, long long);
+void sse_pcmpestri();
 using sse_pcmpestri_t = decltype(&sse_pcmpestri);
 
-void* sse_pcmpestrm(unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned char,
-                   long long, long long);
+void sse_pcmpestrm();
 using sse_pcmpestrm_t = decltype(&sse_pcmpestrm);
 
-void* sse_pcmpistri(unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned char);
+void sse_pcmpistri();
 using sse_pcmpistri_t = decltype(&sse_pcmpistri);
 
-void* sse_pcmpistrm(unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned char);
+void sse_pcmpistrm();
 using sse_pcmpistrm_t = decltype(&sse_pcmpistrm);
 
-void* is_ldt_initialized(void);
+void is_ldt_initialized(void);
 using is_ldt_initialized_t = decltype(&is_ldt_initialized);
 
-void* get_ldt(unsigned int, unsigned int, void*, unsigned int);
+void get_ldt();
 using get_ldt_t = decltype(&get_ldt);
 
-void* set_ldt(unsigned int, unsigned int, void* const*, unsigned int);
+void set_ldt();
 using set_ldt_t = decltype(&set_ldt);
 
-void* execution_mode_for_code_segment_selector(unsigned int, unsigned short);
+void execution_mode_for_code_segment_selector();
 using execution_mode_for_code_segment_selector_t = decltype(&execution_mode_for_code_segment_selector);
 
-void* mov_segment(unsigned int, SegmentRegisters*, SegmentRegister, unsigned short);
+void mov_segment();
 using mov_segment_t = decltype(&mov_segment);
 
-void* abi_for_address(unsigned long long);
+void abi_for_address();
 using abi_for_address_t = decltype(&abi_for_address);
 
-void* determine_state_recovery_action(unsigned int const*, unsigned int, unsigned int);
+void determine_state_recovery_action();
 using determine_state_recovery_action_t = decltype(&determine_state_recovery_action);
 
-void* get_segment_limit(unsigned int, unsigned short);
+void get_segment_limit();
 using get_segment_limit_t = decltype(&get_segment_limit);
 
-void* translator_set_variant(bool);
+void translator_set_variant();
 using translator_set_variant_t = decltype(&translator_set_variant);
 
-void runtime_cpuid(uint16_t a1, uint16_t a2);
+void runtime_cpuid();
 using runtime_cpuid_t = decltype(&runtime_cpuid);
 
-void runtime_wide_udiv_64(uint64_t a1, uint64_t a2, uint64_t a3);
+void runtime_wide_udiv_64();
 using runtime_wide_udiv_64_t = decltype(&runtime_wide_udiv_64);
 
-void runtime_wide_sdiv_64(int64_t a1, int64_t a2, int64_t* a3, int64_t* a4);
+void runtime_wide_sdiv_64();
 using runtime_wide_sdiv_64_t = decltype(&runtime_wide_sdiv_64);
