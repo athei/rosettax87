@@ -23,6 +23,7 @@
 #include <map>
 
 #include "macho_loader.hpp"
+#include "offset_finder.hpp"
 
 // #define WINE
 
@@ -1063,6 +1064,14 @@ std::string get_process_cmdline(int pid) {
 }
 
 int main(int argc, char* argv[]) {
+
+  // Set up offsets dynamically
+  OffsetFinder offset_finder;
+  // Set default offsets temporarily (or just in case we need to fall back)
+  offset_finder.set_default_offsets();
+  // Search the rosetta runtime binary for offsets.
+  offset_finder.determine_offsets();
+
   if (geteuid() != 0) {
     if (argc < 2) {
       printf("Usage: %s <program_to_debug>\n", argv[0]);
@@ -1141,7 +1150,7 @@ int main(int argc, char* argv[]) {
   }
   printf("Attached successfully\n");
 
-  dbg.setBreakpoint(dbg.findModule("runtime") + 0x1289C);
+  dbg.setBreakpoint(dbg.findModule("runtime") + offset_finder.offset_loop_copy_func);
   dbg.continueExecution();
 
   auto rosetta_runtime_exports_address = dbg.readRegister(MuhDebugger::Register::X19);
@@ -1168,7 +1177,7 @@ int main(int argc, char* argv[]) {
   dbg.copyThreadState(backup_thread_state);
 
   // setup a breakpoint after mmap syscall
-  dbg.setBreakpoint(dbg.findModule("runtime") + 0x3C64);
+  dbg.setBreakpoint(dbg.findModule("runtime") + offset_finder.offset_svc_call_ret);
 
   // now we prepare the registers for the mmap call
   arm_thread_state64_t mmap_thread_state;
@@ -1183,7 +1192,7 @@ int main(int argc, char* argv[]) {
   mmap_thread_state.__x[4] = -1;                                                   // fd
   mmap_thread_state.__x[5] = 0;                                                    // offset
 
-  mmap_thread_state.__pc = dbg.findModule("runtime") + 0x3C58;
+  mmap_thread_state.__pc = dbg.findModule("runtime") + offset_finder.offset_svc_call_entry;
 
   dbg.restoreThreadState(mmap_thread_state);
   dbg.continueExecution();
@@ -1192,7 +1201,7 @@ int main(int argc, char* argv[]) {
 
   printf("Allocated memory at 0x%llx\n", macho_base);
 
-  dbg.removeBreakpoint(dbg.findModule("runtime") + 0x3C64);
+  dbg.removeBreakpoint(dbg.findModule("runtime") + offset_finder.offset_svc_call_ret);
   dbg.restoreThreadState(backup_thread_state);
 
   macho_loader.for_each_segment([&](segment_command_64* segm) {
@@ -1262,7 +1271,7 @@ int main(int argc, char* argv[]) {
 
   dbg.writeMemory(macho_imports_address, &lib_rosetta_runtime_exports, sizeof(lib_rosetta_runtime_exports));
 
-  dbg.removeBreakpoint(dbg.findModule("runtime") + 0x1289C);
+  dbg.removeBreakpoint(dbg.findModule("runtime") + offset_finder.offset_loop_copy_func);
 
   // replace the exports in X19 register with the address of the mapped macho
   dbg.setRegister(MuhDebugger::Register::X19, macho_exports_address);

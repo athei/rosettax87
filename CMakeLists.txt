@@ -5,7 +5,7 @@ project(rosettax87)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(rosettax87 loader/main.cpp loader/macho_loader.cpp)
+add_executable(rosettax87 loader/main.cpp loader/macho_loader.cpp loader/offset_finder.cpp)
 
 add_executable(libRuntimeRosettax87 
     rosettaRuntime/main.cpp
