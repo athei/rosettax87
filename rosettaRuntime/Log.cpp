@@ -127,6 +127,27 @@ __attribute__((no_stack_protector, optnone)) void simple_printf(const char* form
           }
           break;
         }
+        case 'l': {
+          ++ptr;  // Skip 'l'
+          if (*ptr == 'd') {
+            d = va_arg(args, long long);
+            char num_buf[20];
+            char* num_ptr = num_buf + sizeof(num_buf) - 1;
+            *num_ptr = '\0';
+            if (d < 0) {
+              *buf_ptr++ = '-';
+              d = -d;
+            }
+            do {
+              *--num_ptr = '0' + (d % 10);
+              d /= 10;
+            } while (d != 0);
+            while (*num_ptr != '\0') {
+              *buf_ptr++ = *num_ptr++;
+            }
+          }
+          break;
+        }
         default:
           *buf_ptr++ = '%';
           *buf_ptr++ = *ptr;

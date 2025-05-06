@@ -14,6 +14,7 @@ add_executable(libRuntimeRosettax87
     rosettaRuntime/X87.cpp
     rosettaRuntime/Export.cpp
     rosettaRuntime/Log.cpp
+    rosettaRuntime/SIMDGuard.cpp
 )
 
 target_include_directories(libRuntimeRosettax87 PRIVATE
@@ -72,17 +73,25 @@ target_link_options(libRuntimeRosettax87 PRIVATE
 "-Wl,-e,start"
 "-Wl,-segalign,10"
 )
-
 target_compile_options(libRuntimeRosettax87 PRIVATE
     "-fvisibility=hidden"
-    "-O3" 
-    "-fno-stack-protector"
+    "-O3"
+    "-ffast-math"           
+    "-funroll-loops"        
+    "-march=native"         
+    "-fomit-frame-pointer"  
     "-fno-builtin-sin"
-    "-fno-builtin-cos"
+    # # Advanced vectorization options
+    "-ftree-vectorize"
+    "-fvectorize"           # Apple clang-specific vectorization
+    # # Function inlining optimizations
+    "-finline-functions"
+    "-fno-stack-protector"
+    "-fno-exceptions"
+    "-fno-unwind-tables"
+    "-fno-asynchronous-unwind-tables"
 )
-
 
 target_link_libraries(libRuntimeRosettax87 PRIVATE
     openlibm
 )
-

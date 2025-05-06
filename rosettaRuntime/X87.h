@@ -183,7 +183,7 @@ using x87_fidiv_t = decltype(&x87_fidiv);
 void x87_fidivr(X87State*, int);
 using x87_fidivr_t = decltype(&x87_fidivr);
 
-void x87_fild(X87State*, long long);
+void x87_fild(X87State*, int64_t);
 using x87_fild_t = decltype(&x87_fild);
 
 void x87_fimul(X87State*, int);

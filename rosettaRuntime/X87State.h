@@ -69,67 +69,73 @@ enum X87ControlWord : uint16_t {
   kInfinityControl = 0x1000
 };
 
-uint32_t inline ConvertX87RegisterToFloat32(X87Float80 x87,
-                                            uint16_t *status_flags) {
-  // Extract components
+float inline ConvertX87RegisterToFloat32(X87Float80 x87, uint16_t *status_flags) {
   uint64_t mantissa = x87.mantissa;
   uint16_t biased_exp = x87.exponent & 0x7FFF;
   uint32_t sign = (x87.exponent & 0x8000) ? 0x80000000 : 0;
+  uint32_t bits;
 
-  // Handle zero
-  if (mantissa == 0) {
-    return sign;
+  if (biased_exp == 0 && mantissa == 0) {
+      bits = sign;
+  } else if (biased_exp == 0x7FFF) {
+      if ((mantissa & 0x7FFFFFFFFFFFFFFFULL) != 0) {
+          *status_flags |= 0x1; // NaN
+          bits = sign | 0x7FC00000;
+      } else {
+          bits = sign | 0x7F800000; // Inf
+      }
+  } else {
+      int32_t exp = biased_exp - 16383 + 127;
+      uint64_t frac = mantissa & 0x7FFFFFFFFFFFFFFFULL;
+      uint32_t significant = frac >> 40;
+
+      uint64_t round_bit = (frac >> 39) & 1;
+      uint64_t sticky_bits = frac & 0x7FFFFFFFFF;
+
+      if (exp <= 0) {
+          if (exp < -23) {
+              *status_flags |= 0x2;
+              bits = sign;
+          } else {
+              int shift = 1 - exp;
+              uint64_t mant = (frac | 0x8000000000000000ULL) >> (40 + shift);
+              round_bit = (frac >> (39 + shift)) & 1;
+              sticky_bits = frac & ((1ULL << (39 + shift)) - 1);
+              significant = mant;
+              exp = 0;
+          }
+      }
+
+      if (round_bit && (sticky_bits || (significant & 1))) {
+          significant++;
+          if (significant == 0x800000) {
+              significant = 0;
+              exp++;
+              if (exp >= 255) {
+                  *status_flags |= 0x4;
+                  bits = sign | 0x7F800000;
+                  goto return_float;
+              }
+          }
+      }
+
+      if (exp >= 255) {
+          *status_flags |= 0x4;
+          bits = sign | 0x7F800000;
+      } else {
+          bits = sign | (exp << 23) | (significant & 0x7FFFFF);
+      }
   }
 
-  // Handle infinity and NaN
-  if (biased_exp == 0x7FFF) {
-    if (mantissa != 0x8000000000000000ULL) {
-      // NaN
-      *status_flags |= 0x1;
-      return sign | 0x7F800000 | 0x400000; // Quiet NaN
-    }
-    // Infinity
-    return sign | 0x7F800000;
-  }
-
-  // Convert biased exponent from x87 (16383) to IEEE 754 (127)
-  int32_t exp = biased_exp - 16383 + 127;
-
-  // Handle denormals and underflow
-  if (exp <= 0) {
-    *status_flags |= 0x2; // Set underflow flag
-    if (exp < -23) {
-      return sign; // Too small, return signed zero
-    }
-    // Denormalize
-    mantissa = (mantissa >> (-exp + 1));
-    exp = 0;
-  }
-
-  // Handle overflow
-  if (exp >= 255) {
-    *status_flags |= 0x4;     // Set overflow flag
-    return sign | 0x7F800000; // Return infinity
-  }
-
-  // Extract 23 bits for mantissa, with rounding
-  uint32_t significant = (mantissa >> 40) & 0x7FFFFF;
-
-  // Round to nearest even
-  uint64_t round_bit = (mantissa >> 39) & 1;
-  uint64_t sticky_bits = (mantissa & ((1ULL << 39) - 1)) != 0;
-
-  if (round_bit && (sticky_bits || (significant & 1))) {
-    significant++;
-    // Handle carry from rounding
-    if (significant == 0x800000) {
-      significant = 0;
-      exp++;
-    }
-  }
-
-  return sign | (exp << 23) | significant;
+return_float:
+  union {
+      uint32_t u;
+      float f;
+  } result;
+  result.u = bits;
+  return result.f;
 }
+
 
 double inline ConvertX87RegisterToFloat64(X87Float80 x87,
                                           uint16_t *status_flags) {
@@ -210,76 +216,56 @@ double inline ConvertX87RegisterToFloat64(X87Float80 x87,
   return result.value;
 }
 
-X87Float80 inline ConvertFloat64ToX87Register(double value,
-                                              uint16_t *status_flags) {
+inline X87Float80 ConvertFloat64ToX87Register(double value, uint16_t *status_flags) {
   X87Float80 result;
 
-  // Create union for bit manipulation of the double
   union {
-    double value;
-    uint64_t bits;
+      double value;
+      uint64_t bits;
   } d;
   d.value = value;
 
-  // Extract components from double
-  uint64_t sign = (d.bits >> 63) & 1;
+  uint64_t sign = (d.bits >> 63) & 0x1;
   uint64_t exp = (d.bits >> 52) & 0x7FF;
   uint64_t mantissa = d.bits & 0xFFFFFFFFFFFFFULL;
 
-  // Handle special cases
   if (exp == 0 && mantissa == 0) {
-    // Zero
-    result.exponent = sign << 15;
-    result.mantissa = 0;
-    result.ieee754 = value;
-    return result;
+      // Zero (positive or negative)
+      result.exponent = sign << 15;
+      result.mantissa = 0;
+      return result;
   }
 
   if (exp == 0x7FF) {
-    if (mantissa == 0) {
-      // Infinity
-      result.exponent = (sign << 15) | 0x7FFF;
-      result.mantissa = 0x8000000000000000ULL; // Explicit 1 bit for infinity
-      result.ieee754 = value;
-      return result;
-    } else {
-      // NaN
-      result.exponent = (sign << 15) | 0x7FFF;
-      // Set bit 63 and preserve payload bits, ensuring it's a quiet NaN
-      result.mantissa =
-          0x8000000000000000ULL | (mantissa << 11) | 0x4000000000000000ULL;
-      result.ieee754 = value;
-      *status_flags |= 0x1; // Set Invalid Operation flag
-      return result;
-    }
+      if (mantissa == 0) {
+          // Infinity
+          result.exponent = (sign << 15) | 0x7FFF;
+          result.mantissa = 0x8000000000000000ULL; // integer bit = 1, fraction = 0
+          return result;
+      } else {
+          // NaN
+          result.exponent = (sign << 15) | 0x7FFF;
+          result.mantissa = 0xC000000000000000ULL | (mantissa << 11); // Quiet NaN (integer bit=1, fraction MSB=1)
+          if (status_flags) *status_flags |= 0x1; // Invalid Operation
+          return result;
+      }
   }
 
-  // Handle subnormal double values
   if (exp == 0) {
-    // Denormal value
-    *status_flags |= 0x2; // Set Denormal flag
-
-    // Find position of leading 1
-    int leading_zeros = __builtin_clzll(mantissa) - (64 - 52);
-    exp = 1 - leading_zeros;
-
-    // Shift mantissa to normalize it
-    mantissa = mantissa << (leading_zeros + 1);
-
-    // Adjust exponent
-    exp = 0 - leading_zeros;
+      // Denormalized double
+      if (status_flags) *status_flags |= 0x2; // Denormal flag
+      // Normalize subnormal double
+      int shift = __builtin_clzll(mantissa) - 11; // subtract 11 due to 52-bit mantissa
+      mantissa <<= (shift + 1); // shift mantissa left to normalize
+      exp = 1 - shift; // correct exponent adjustment
   }
 
-  // Convert exponent bias from 1023 (double) to 16383 (x87)
-  uint16_t x87_exp = exp - 1023 + 16383;
+  // Adjust exponent bias from double (1023) to x87 (16383)
+  uint16_t x87_exp = (exp - 1023) + 16383;
 
-  // Set x87 components
+  // Explicitly set integer bit to 1 for normal numbers
   result.exponent = (sign << 15) | x87_exp;
-
-  // For normal numbers, shift mantissa and set explicit integer bit (bit 63)
   result.mantissa = (mantissa << 11) | 0x8000000000000000ULL;
-
-  // result.ieee754 = value; // Store original value for optimization
 
   return result;
 }
@@ -352,6 +338,28 @@ struct X87State {
 #endif
   }
 
+  auto
+  get_st_const32(unsigned int st_offset) const -> std::pair<float, uint16_t> {
+    const unsigned int reg_idx = get_st_index(st_offset);
+    const X87TagState tag =
+        static_cast<X87TagState>((tag_word >> (reg_idx * 2)) & 3);
+
+    uint16_t new_status_word =
+        status_word & ~(X87StatusWordFlag::kConditionCode1);
+    if (tag == X87TagState::kEmpty) {
+      // FP_X_STK | FP_X_INV
+      //  return nan
+      return {std::numeric_limits<float>::quiet_NaN(), new_status_word | 0x41};
+    }
+
+#if !defined(X87_CONVERT_TO_FP80)
+    return {st[reg_idx].ieee754, new_status_word};
+#else
+    auto value = ConvertX87RegisterToFloat32(st[reg_idx], &new_status_word);
+    return {value, new_status_word};
+#endif
+  }
+
   auto get_st_tag(unsigned int st_offset) const -> X87TagState {
     const unsigned int reg_idx = get_st_index(st_offset);
     return static_cast<X87TagState>((tag_word >> (reg_idx * 2)) & 3);
@@ -400,6 +408,26 @@ struct X87State {
     }
 
     // simple_printf("set_st tag: %d\n", tag);
+
+    // Clear existing tag bits and set new state
+    tag_word &= ~(3 << (st_idx * 2));
+    tag_word |= (static_cast<int>(tag) << (st_idx * 2));
+  }
+
+  auto set_st_80fp(unsigned int st_offset, X87Float80 value) -> void {
+    auto st_idx = get_st_index(st_offset);
+    st[st_idx] = value;
+
+    // Set tag bits based on value
+    X87TagState tag;
+    
+    if (value.mantissa == 0) {
+      tag = X87TagState::kZero;
+    } else if (value.exponent == 0x7FFF) {
+      tag = X87TagState::kSpecial;
+    } else {
+      tag = X87TagState::kValid;
+    }
 
     // Clear existing tag bits and set new state
     tag_word &= ~(3 << (st_idx * 2));

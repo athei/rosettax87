@@ -3,6 +3,7 @@
 #include "Export.h"
 #include "Log.h"
 #include "X87State.h"
+#include "SIMDGuard.h"
 
 #include "openlibm_math.h"
 
@@ -117,10 +118,15 @@ X87_TRAMPOLINE(translator_get_instruction_offsets, x2)
 X87_TRAMPOLINE(translator_apply_fixups, x8)
 
 void x87_init(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_init\n", 9);
 
-  // *a1 = X87State();
+#if defined(X87_CONVERT_TO_FP80)
   orig_x87_init(a1);
+#else
+  *a1 = X87State();
+#endif
 }
 void x87_state_from_x86_float_state(X87State *a1, X86FloatState64 const *a2) {
   MISSING(1, "x87_state_from_x86_float_state\n", 31);
@@ -140,6 +146,8 @@ void x87_pop_register_stack(X87State *a1) {
 // –1.0 to +1.0. If the source value is outside this range, the result is
 // undefined.
 void x87_f2xm1(X87State *state) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_f2xm1\n", 10);
 #if defined(X87_F2XM1)
   // Get value from ST(0)
@@ -166,6 +174,8 @@ void x87_f2xm1(X87State *state) {
 // following table shows the results obtained when creating the absolute value
 // of various classes of numbers. C1 	Set to 0.
 void x87_fabs(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fabs\n", 10);
 
 #if defined(X87_FABS)
@@ -184,6 +194,8 @@ void x87_fabs(X87State *a1) {
 
 void x87_fadd_ST(X87State *a1, unsigned int st_offset_1,
                  unsigned int st_offset_2, bool pop_stack) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fadd_ST\n", 13);
 #if defined(X87_FADD_ST)
   // Clear condition code 1 and exception flags
@@ -205,6 +217,8 @@ void x87_fadd_ST(X87State *a1, unsigned int st_offset_1,
 }
 
 void x87_fadd_f32(X87State *a1, unsigned int fp32) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fadd_f32\n", 14);
 #if defined(X87_FADD_F32)
 
@@ -219,6 +233,8 @@ void x87_fadd_f32(X87State *a1, unsigned int fp32) {
 #endif
 }
 void x87_fadd_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fadd_f64\n", 14);
 #if defined(X87_FADD_F64)
 
@@ -242,6 +258,8 @@ void x87_fbstp(X87State const *a1) {
   orig_x87_fbstp(a1);
 }
 void x87_fchs(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fchs\n", 10);
 #if defined(X87_FCHS)
   // set C1 to 0
@@ -256,6 +274,8 @@ void x87_fchs(X87State *a1) {
 
 void x87_fcmov(X87State *state, unsigned int condition,
                unsigned int st_offset) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcmov\n", 11);
 
 #if defined(X87_FCMOV)
@@ -284,6 +304,8 @@ void x87_fcmov(X87State *state, unsigned int condition,
 
 void x87_fcom_ST(X87State *a1, unsigned int st_offset,
                  unsigned int number_of_pops) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcom_ST\n", 13);
 
 #if defined(X87_FCOM_ST)
@@ -317,6 +339,8 @@ void x87_fcom_ST(X87State *a1, unsigned int st_offset,
 }
 
 void x87_fcom_f32(X87State *a1, unsigned int fp32, bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcom_f32\n", 14);
 #if defined(X87_FCOM_F32)
   auto st0 = a1->get_st(0);
@@ -344,6 +368,8 @@ void x87_fcom_f32(X87State *a1, unsigned int fp32, bool pop) {
 #endif
 }
 void x87_fcom_f64(X87State *a1, unsigned long long fp64, bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcom_f64\n", 14);
 #if defined(X87_FCOM_F64)
   auto st0 = a1->get_st(0);
@@ -372,6 +398,8 @@ void x87_fcom_f64(X87State *a1, unsigned long long fp64, bool pop) {
 }
 
 uint32_t x87_fcomi(X87State *state, unsigned int st_offset, bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcomi\n", 11);
 #if defined(X87_FCOMI)
   state->status_word &= ~(kConditionCode0);
@@ -411,6 +439,8 @@ uint32_t x87_fcomi(X87State *state, unsigned int st_offset, bool pop) {
 }
 
 void x87_fcos(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fcos\n", 10);
 #if defined(X87_FCOS)
   a1->status_word &= ~(kConditionCode1 | kConditionCode2);
@@ -433,6 +463,8 @@ void x87_fdecstp(X87State *a1) {
 
 void x87_fdiv_ST(X87State *a1, unsigned int st_offset_1,
                  unsigned int st_offset_2, bool pop_stack) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdiv_ST\n", 13);
 #if defined(X87_FDIV_ST)
   // Clear condition code 1 and exception flags
@@ -454,6 +486,8 @@ void x87_fdiv_ST(X87State *a1, unsigned int st_offset_1,
 }
 
 void x87_fdiv_f32(X87State *a1, unsigned int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdiv_f32\n", 14);
 #if defined(X87_FDIV_F32)
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
@@ -468,6 +502,8 @@ void x87_fdiv_f32(X87State *a1, unsigned int a2) {
 }
 
 void x87_fdiv_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdiv_f64\n", 14);
 
 #if defined(X87_FDIV_F64)
@@ -484,6 +520,8 @@ void x87_fdiv_f64(X87State *a1, unsigned long long a2) {
 
 void x87_fdivr_ST(X87State *a1, unsigned int st_offset_1,
                   unsigned int st_offset_2, bool pop_stack) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdivr_ST\n", 14);
 #if defined(X87_FDIVR_ST)
   // Clear condition code 1 and exception flags
@@ -505,6 +543,8 @@ void x87_fdivr_ST(X87State *a1, unsigned int st_offset_1,
 }
 
 void x87_fdivr_f32(X87State *a1, unsigned int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdivr_f32\n", 15);
 #if defined(X87_FDIVR_F32)
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
@@ -519,6 +559,8 @@ void x87_fdivr_f32(X87State *a1, unsigned int a2) {
 }
 
 void x87_fdivr_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fdivr_f64\n", 15);
 #if defined(X87_FDIVR_F64)
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
@@ -537,6 +579,8 @@ void x87_ffree(X87State *a1, unsigned int a2) {
   orig_x87_ffree(a1, a2);
 }
 void x87_fiadd(X87State *a1, int m32int) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fiadd\n", 11);
 #if defined(X87_FIADD)
   // simple_printf("m32int: %d\n", m32int);
@@ -563,6 +607,8 @@ void x87_ficom(X87State *a1, int a2, bool a3) {
 }
 
 void x87_fidiv(X87State *a1, int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fidiv\n", 11);
 #if defined(X87_FIDIV)
   // Clear condition code 1 and exception flags
@@ -582,6 +628,8 @@ void x87_fidiv(X87State *a1, int a2) {
 }
 
 void x87_fidivr(X87State *a1, int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fidivr\n", 12);
 #if defined(X87_FIDIVR)
   // Clear condition code 1 and exception flags
@@ -600,21 +648,49 @@ void x87_fidivr(X87State *a1, int a2) {
 #endif
 }
 
+X87Float80 doubleToX87Components(int64_t value) {
+
+  uint64_t abs_value =
+      value >= 0 ? static_cast<uint64_t>(value) : static_cast<uint64_t>(-value);
+
+  uint16_t leading_zeros =
+      abs_value ? static_cast<uint16_t>(__builtin_clzll(abs_value)) : 64;
+  uint64_t mantissa =
+      abs_value ? ((abs_value << leading_zeros) | 0x8000000000000000ULL) : 0;
+
+  uint16_t exponent;
+  if (abs_value == 0) {
+    exponent = 0;
+  } else {
+    exponent =
+        static_cast<uint16_t>((value < 0 ? 0x8000 : 0) - leading_zeros + 16446);
+  }
+
+  X87Float80 result;
+  result.mantissa = mantissa;
+  result.exponent = exponent;
+
+  return result;
+}
+
 // Converts the signed-integer source operand into double extended-precision
 // floating-point format and pushes the value onto the FPU register stack. The
 // source operand can be a word, doubleword, or quadword integer. It is loaded
 // without rounding errors. The sign of the source operand is preserved.
-void x87_fild(X87State *a1, long long a2) {
+void x87_fild(X87State *a1, int64_t value) {
+  SIMDGuard simd_guard;
   LOG(1, "x87_fild\n", 10);
+
 #if defined(X87_FILD)
   a1->push();
-  a1->set_st(0, a2);
+  a1->set_st(0, static_cast<double>(value));
 #else
-  orig_x87_fild(a1, a2);
+  orig_x87_fild(a1, value);
 #endif
 }
 
 void x87_fimul(X87State *a1, int a2) {
+  SIMDGuard simd_guard;
   LOG(1, "x87_fimul\n", 11);
 #if defined(X87_FIMUL)
   // Clear condition code 1 and exception flags
@@ -638,6 +714,8 @@ void x87_fincstp(X87State *a1) {
 }
 
 X87ResultStatusWord x87_fist_i16(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fist_i16\n", 14);
 #if defined(X87_FIST_I16)
   auto [value, status_word] = a1->get_st_const(0);
@@ -687,6 +765,8 @@ X87ResultStatusWord x87_fist_i16(X87State const *a1) {
 }
 
 X87ResultStatusWord x87_fist_i32(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fist_i32\n", 14);
 #if defined(X87_FIST_I32)
   auto [value, status_word] = a1->get_st_const(0);
@@ -734,6 +814,8 @@ X87ResultStatusWord x87_fist_i32(X87State const *a1) {
 #endif
 }
 X87ResultStatusWord x87_fist_i64(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fist_i64\n", 14);
 #if defined(X87_FIST_I64)
   // Get value in ST(0)
@@ -786,6 +868,8 @@ X87ResultStatusWord x87_fist_i64(X87State const *a1) {
 }
 
 X87ResultStatusWord x87_fistt_i16(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fistt_i16\n", 15);
 #if defined(X87_FISTT_I16)
   // Get value in ST(0)
@@ -798,6 +882,8 @@ X87ResultStatusWord x87_fistt_i16(X87State const *a1) {
 }
 
 X87ResultStatusWord x87_fistt_i32(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fistt_i32\n", 15);
 #if defined(X87_FISTT_I32)
   // Get value in ST(0)
@@ -810,6 +896,8 @@ X87ResultStatusWord x87_fistt_i32(X87State const *a1) {
 }
 
 X87ResultStatusWord x87_fistt_i64(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fistt_i64\n", 15);
 #if defined(X87_FISTT_I64)
   // Get value in ST(0)
@@ -821,6 +909,8 @@ X87ResultStatusWord x87_fistt_i64(X87State const *a1) {
 #endif
 }
 void x87_fisub(X87State *a1, int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fisub\n", 11);
 #if defined(X87_FISUB)
   // Clear condition code 1
@@ -840,6 +930,8 @@ void x87_fisub(X87State *a1, int a2) {
 }
 
 void x87_fisubr(X87State *a1, int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fisubr\n", 12);
 
 #if defined(X87_FISUBR)
@@ -861,6 +953,8 @@ void x87_fisubr(X87State *a1, int a2) {
 
 // Push ST(i) onto the FPU register stack.
 void x87_fld_STi(X87State *a1, unsigned int st_offset) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fld_STi\n", 13);
 #if defined(X87_FLD_STI)
   a1->status_word &= ~0x200u;
@@ -878,6 +972,8 @@ void x87_fld_STi(X87State *a1, unsigned int st_offset) {
 #endif
 }
 void x87_fld_constant(X87State *a1, X87Constant a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fld_constant\n", 18);
   // simple_printf("x87_fld_constant %d\n", (int)a2);
 #if defined(X87_FLD_CONSTANT)
@@ -931,6 +1027,8 @@ void x87_fld_constant(X87State *a1, X87Constant a2) {
 #endif
 }
 void x87_fld_fp32(X87State *a1, unsigned int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fld_fp32\n", 14);
 
 #if defined(X87_FLD_FP32)
@@ -944,6 +1042,8 @@ void x87_fld_fp32(X87State *a1, unsigned int a2) {
 }
 
 void x87_fld_fp64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fld_fp64\n", 14);
 
 #if defined(X87_FLD_FP64)
@@ -972,6 +1072,8 @@ void x87_fld_fp80(X87State *a1, X87Float80 a2) {
 
 void x87_fmul_ST(X87State *a1, unsigned int st_offset_1,
                  unsigned int st_offset_2, bool pop_stack) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fmul_ST\n", 13);
 
 #if defined(X87_FMUL_ST)
@@ -994,6 +1096,8 @@ void x87_fmul_ST(X87State *a1, unsigned int st_offset_1,
 }
 
 void x87_fmul_f32(X87State *a1, unsigned int fp32) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fmul_f32\n", 14);
 
 #if defined(X87_FMUL_F32)
@@ -1009,6 +1113,8 @@ void x87_fmul_f32(X87State *a1, unsigned int fp32) {
 }
 
 void x87_fmul_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fmul_f64\n", 14);
 
 #if defined(X87_FMUL_F64)
@@ -1025,6 +1131,8 @@ void x87_fmul_f64(X87State *a1, unsigned long long a2) {
 
 // Replace ST(1) with arctan(ST(1)/ST(0)) and pop the register stack.
 void x87_fpatan(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fpatan\n", 12);
 
 #if defined(X87_FPATAN)
@@ -1060,6 +1168,8 @@ void x87_fpatan(X87State *a1) {
 // computing the remainder of various classes of numbers, assuming that
 // underflow does not occur.
 void x87_fprem(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fprem\n", 11);
 
 #if defined(X87_FPREM)
@@ -1133,6 +1243,8 @@ void x87_fprem1(X87State *a1) {
 // partial tangent of various classes of numbers, assuming that underflow does
 // not occur.
 void x87_fptan(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fptan\n", 11);
 
 #if defined(X87_FPTAN)
@@ -1160,6 +1272,8 @@ void x87_fptan(X87State *a1) {
 // depending on the current rounding mode (setting of the RC field of the FPU
 // control word), and stores the result in ST(0).
 void x87_frndint(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_frndint\n", 13);
 
 #if defined(X87_FRNDINT)
@@ -1184,6 +1298,8 @@ void x87_frndint(X87State *a1) {
 // obtained when scaling various classes of numbers, assuming that neither
 // overflow nor underflow occurs.
 void x87_fscale(X87State *state) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fscale\n", 12);
 
 #if defined(X87_FSCALE)
@@ -1212,6 +1328,8 @@ void x87_fscale(X87State *state) {
 }
 
 void x87_fsin(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsin\n", 10);
 
 #if defined(X87_FSIN)
@@ -1245,6 +1363,8 @@ IF ST(0) < 2^63
 FI;
 */
 void x87_fsincos(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsincos\n", 13);
 
 #if defined(X87_FSINCOS)
@@ -1273,6 +1393,8 @@ void x87_fsincos(X87State *a1) {
 }
 // Computes square root of ST(0) and stores the result in ST(0).
 void x87_fsqrt(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsqrt\n", 11);
 
 #if defined(X87_FSQRT)
@@ -1291,6 +1413,8 @@ void x87_fsqrt(X87State *a1) {
 }
 
 void x87_fst_STi(X87State *a1, unsigned int st_offset, bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fst_STi\n", 13);
 
 #if defined(X87_FST_STI)
@@ -1310,10 +1434,12 @@ void x87_fst_STi(X87State *a1, unsigned int st_offset, bool pop) {
 }
 
 X87ResultStatusWord x87_fst_fp32(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fst_fp32\n", 14);
 
 #if defined(X87_FST_FP32)
-  auto [value, status_word] = a1->get_st_const(0);
+  auto [value, status_word] = a1->get_st_const32(0);
   float tmp = value;
   return {*reinterpret_cast<uint32_t *>(&tmp), status_word};
 #else
@@ -1322,6 +1448,8 @@ X87ResultStatusWord x87_fst_fp32(X87State const *a1) {
 }
 
 X87ResultStatusWord x87_fst_fp64(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fst_fp64\n", 14);
 
 #if defined(X87_FST_FP64)
@@ -1335,6 +1463,8 @@ X87ResultStatusWord x87_fst_fp64(X87State const *a1) {
 }
 
 X87Float80 x87_fst_fp80(X87State const *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fst_fp80\n", 14);
 
 #if defined(X87_FST_FP80)
@@ -1394,6 +1524,8 @@ X87Float80 x87_fst_fp80(X87State const *a1) {
 }
 void x87_fsub_ST(X87State *a1, unsigned int st_offset1, unsigned int st_offset2,
                  bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsub_ST\n", 13);
 
 #if defined(X87_FSUB_ST)
@@ -1416,6 +1548,8 @@ void x87_fsub_ST(X87State *a1, unsigned int st_offset1, unsigned int st_offset2,
 }
 
 void x87_fsub_f32(X87State *a1, unsigned int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsub_f32\n", 14);
 
 #if defined(X87_FSUB_F32)
@@ -1431,6 +1565,8 @@ void x87_fsub_f32(X87State *a1, unsigned int a2) {
 }
 
 void x87_fsub_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsub_f64\n", 14);
 
 #if defined(X87_FSUB_F64)
@@ -1447,6 +1583,8 @@ void x87_fsub_f64(X87State *a1, unsigned long long a2) {
 
 void x87_fsubr_ST(X87State *a1, unsigned int st_offset1,
                   unsigned int st_offset2, bool pop) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsubr_ST\n", 14);
 
 #if defined(X87_FSUBR_ST)
@@ -1470,6 +1608,8 @@ void x87_fsubr_ST(X87State *a1, unsigned int st_offset1,
 }
 
 void x87_fsubr_f32(X87State *a1, unsigned int a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsubr_f32\n", 15);
 
 #if defined(X87_FSUBR_F32)
@@ -1485,6 +1625,8 @@ void x87_fsubr_f32(X87State *a1, unsigned int a2) {
 }
 
 void x87_fsubr_f64(X87State *a1, unsigned long long a2) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fsubr_f64\n", 15);
 
 #if defined(X87_FSUBR_F64)
@@ -1506,6 +1648,8 @@ void x87_fucom(X87State *a1, unsigned int a2, unsigned int a3) {
 // Compare ST(0) with ST(i), check for ordered values, set status flags
 // accordingly, and pop register stack.
 uint32_t x87_fucomi(X87State *state, unsigned int st_offset, bool pop_stack) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fucomi\n", 12);
 
 #if defined(X87_FUCOMI)
@@ -1564,6 +1708,8 @@ ESAC;
 
 */
 void x87_fxam(X87State *a1) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fxam\n", 10);
 
 #if defined(X87_FXAM)
@@ -1619,6 +1765,8 @@ void x87_fxam(X87State *a1) {
 }
 
 void x87_fxch(X87State *a1, unsigned int st_offset) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fxch\n", 10);
 
 #if defined(X87_FXCH)
@@ -1641,6 +1789,8 @@ void x87_fxtract(X87State *a1) {
 
 // Replace ST(1) with (ST(1) ∗ log2ST(0)) and pop the register stack.
 void x87_fyl2x(X87State *state) {
+  SIMDGuard simd_guard;
+
   LOG(1, "x87_fyl2x\n", 12);
 
 #if defined(X87_FYL2X)
