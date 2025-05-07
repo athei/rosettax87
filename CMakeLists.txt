@@ -76,7 +76,6 @@ target_link_options(libRuntimeRosettax87 PRIVATE
 target_compile_options(libRuntimeRosettax87 PRIVATE
     "-fvisibility=hidden"
     "-O3"
-    "-ffast-math"           
     "-funroll-loops"        
     "-march=native"         
     "-fomit-frame-pointer"  

@@ -311,22 +311,25 @@ void x87_fcom_ST(X87State *a1, unsigned int st_offset,
 #if defined(X87_FCOM_ST)
   // Get values to compare
   auto st0 = a1->get_st(0);
-  auto sti = a1->get_st(st_offset);
+  auto src = a1->get_st(st_offset);
 
   // Clear condition code bits C0, C2, C3 (bits 8, 9, 14)
-  a1->status_word &=
-      ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
+  a1->status_word &= ~(kConditionCode0 | kConditionCode2 | kConditionCode3);
 
   // Set condition codes based on comparison
-  if (isnan(st0) || isnan(sti)) {
-    a1->status_word |=
-        kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
-  } else if (st0 > sti) {
+  if (st0 > src) {
     // Leave C0=C2=C3=0
-  } else if (st0 < sti) {
+  } else if (st0 < src) {
     a1->status_word |= kConditionCode0; // Set C0=1
   } else {                              // st0 == sti
     a1->status_word |= kConditionCode3; // Set C3=1
+  }
+
+  if ((a1->control_word & kInvalidOpMask) == kInvalidOpMask) {
+    if (isnan(st0) || isnan(src)) {
+      a1->status_word |=
+          kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
+    }
   }
 
   // Handle pops if requested
@@ -344,20 +347,24 @@ void x87_fcom_f32(X87State *a1, unsigned int fp32, bool pop) {
   LOG(1, "x87_fcom_f32\n", 14);
 #if defined(X87_FCOM_F32)
   auto st0 = a1->get_st(0);
-  auto value = *reinterpret_cast<float *>(&fp32);
+  auto src = *reinterpret_cast<float *>(&fp32);
 
   a1->status_word &=
       ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
 
-  if (isnan(st0) || isnan(value)) {
-    a1->status_word |=
-        kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
-  } else if (st0 > value) {
+  if (st0 > src) {
     // Leave C0=C2=C3=0
-  } else if (st0 < value) {
+  } else if (st0 < src) {
     a1->status_word |= kConditionCode0; // Set C0=1
   } else {                              // st0 == value
     a1->status_word |= kConditionCode3; // Set C3=1
+  }
+
+  if ((a1->control_word & kInvalidOpMask) == kInvalidOpMask) {
+    if (isnan(st0) || isnan(src)) {
+      a1->status_word |=
+          kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
+    }
   }
 
   if (pop) {
@@ -373,20 +380,23 @@ void x87_fcom_f64(X87State *a1, unsigned long long fp64, bool pop) {
   LOG(1, "x87_fcom_f64\n", 14);
 #if defined(X87_FCOM_F64)
   auto st0 = a1->get_st(0);
-  auto value = *reinterpret_cast<double *>(&fp64);
+  auto src = *reinterpret_cast<double *>(&fp64);
 
-  a1->status_word &=
-      ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
+  a1->status_word &= ~(kConditionCode0 | kConditionCode2 | kConditionCode3);
 
-  if (isnan(st0) || isnan(value)) {
-    a1->status_word |=
-        kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
-  } else if (st0 > value) {
+  if (st0 > src) {
     // Leave C0=C2=C3=0
-  } else if (st0 < value) {
+  } else if (st0 < src) {
     a1->status_word |= kConditionCode0; // Set C0=1
   } else {                              // st0 == value
     a1->status_word |= kConditionCode3; // Set C3=1
+  }
+
+  if ((a1->control_word & kInvalidOpMask) == kInvalidOpMask) {
+    if (isnan(st0) || isnan(src)) {
+      a1->status_word |=
+          kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
+    }
   }
 
   if (pop) {
@@ -608,11 +618,10 @@ void x87_ficom(X87State *a1, int src, bool pop) {
   auto st0 = a1->get_st(0);
 
   // Clear condition code bits C0, C2, C3 (bits 8, 9, 14)
-  a1->status_word &=
-      ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
+  a1->status_word &= ~(kConditionCode0 | kConditionCode2 | kConditionCode3);
 
   // Set condition codes based on comparison
-  if (isnan(st0) || isnan(src)) {
+  if (isnan(st0)) {
     a1->status_word |=
         kConditionCode0 | kConditionCode2 | kConditionCode3; // Set C0=C2=C3=1
   } else if (st0 > src) {
@@ -1086,11 +1095,10 @@ void x87_fld_fp80(X87State *a1, X87Float80 a2) {
   LOG(1, "x87_fld_fp80\n", 14);
 
 #if defined(X87_FLD_FP80)
-  auto ieee754 = ConvertX87RegisterToFloat32(a2, &a1->status_word);
+  auto ieee754 = ConvertX87RegisterToFloat64(a2, &a1->status_word);
 
-  // convert to ieee754 float
   a1->push();
-  a1->set_st(0, *reinterpret_cast<float *>(&ieee754));
+  a1->set_st(0, ieee754);
 #else
   orig_x87_fld_fp80(a1, a2);
 #endif

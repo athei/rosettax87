@@ -303,8 +303,8 @@ struct X87State {
   // if empty. Updates status word.
   auto get_st(unsigned int st_offset) -> double {
     const unsigned int reg_idx = get_st_index(st_offset);
-    const int tag = (tag_word >> (reg_idx * 2)) & 3;
-    if (tag == 3) {
+    const auto tag = static_cast<X87TagState>((tag_word >> (reg_idx * 2)) & 3);
+    if (tag == X87TagState::kEmpty) {
       // FP_X_STK | FP_X_INV
       status_word |= 0x41;
       return std::numeric_limits<double>::quiet_NaN();
