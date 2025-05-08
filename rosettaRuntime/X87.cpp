@@ -140,11 +140,6 @@ X87_TRAMPOLINE(x87_state_from_x86_float_state, x9);
 X87_TRAMPOLINE(x87_state_to_x86_float_state, x9);
 X87_TRAMPOLINE(x87_pop_register_stack, x9);
 
-// Computes the exponential value of 2 to the power of the source operand
-// minus 1. The source operand is located in register ST(0) and the result is
-// also stored in ST(0). The value of the source operand must lie in the range
-// –1.0 to +1.0. If the source value is outside this range, the result is
-// undefined.
 #if defined(X87_F2XM1)
 void x87_f2xm1(X87State *state) {
   SIMDGuard simd_guard;
@@ -302,13 +297,73 @@ X87_TRAMPOLINE_ARGS(void, x87_fbld,
                     (X87State * a1, unsigned long long a2,
                      unsigned long long a3),
                     x9);
-// orig_x87_fbld(a1, a2, a3);
 #endif
 
-void x87_fbstp(X87State const *a1) {
-  MISSING(1, "x87_fbstp\n", 11);
-  orig_x87_fbstp(a1);
+#if defined(X87_FBSTP)
+uint128_t x87_fbstp(X87State *a1) {
+  LOG(1, "x87_fbstp\n", 11);
+
+  auto st0 = a1->get_st(0);
+  a1->pop();
+
+  // convert double to BCD
+  uint8_t bcd[10] = {0}; // Initialize all bytes to 0
+
+  // Handle sign
+  bool is_negative = signbit(st0);
+
+  // Handle special cases
+  if (isnan(st0) || isinf(st0)) {
+    // Set to indefinite BCD value
+    memset(bcd, 0, 10);
+    if (is_negative) {
+      bcd[9] = 0x80; // Set sign bit if negative
+    }
+  } else {
+    // Get absolute value
+    double abs_value = fabs(st0);
+
+    // Truncate to integer
+    abs_value = trunc(abs_value);
+
+    // Check if value is too large for BCD format (more than 18 decimal digits)
+    if (abs_value > 999999999999999999.0) {
+      // Handle overflow - set to maximum BCD value
+      memset(bcd, 0x99, 9); // Set first 9 bytes to 0x99 (all digits = 9)
+      bcd[9] = 0x09;        // Set last digit to 9
+      if (is_negative) {
+        bcd[9] |= 0x80; // Set sign bit if negative
+      }
+    } else {
+      // Convert to BCD representation
+      uint64_t integer_part = static_cast<uint64_t>(abs_value);
+
+      // Process each byte (2 decimal digits per byte)
+      for (int i = 0; i < 9; i++) {
+        uint8_t digit1 = integer_part % 10;
+        integer_part /= 10;
+        uint8_t digit2 = integer_part % 10;
+        integer_part /= 10;
+
+        bcd[i] = digit1 | (digit2 << 4);
+      }
+
+      // Handle the 10th byte (contains 1 digit and sign)
+      bcd[9] = integer_part % 10;
+      if (is_negative) {
+        bcd[9] |= 0x80; // Set sign bit if negative
+      }
+    }
+  }
+
+  return {
+      .low = reinterpret_cast<uint64_t *>(bcd)[0],
+      .high = reinterpret_cast<uint64_t *>(bcd)[1],
+  };
 }
+#else
+X87_TRAMPOLINE_ARGS(uint128_t, x87_fbstp, (X87State const *a1), x9);
+#endif
 
 #if defined(X87_FCHS)
 void x87_fchs(X87State *a1) {
@@ -529,10 +584,25 @@ void x87_fcos(X87State *a1) {
 X87_TRAMPOLINE_ARGS(void, x87_fcos, (X87State * a1), x9);
 #endif
 
+#if defined(X87_FDECSTP)
 void x87_fdecstp(X87State *a1) {
-  MISSING(1, "x87_fdecstp\n", 13);
-  orig_x87_fdecstp(a1);
+  LOG(1, "x87_fdecstp\n", 13);
+
+  uint16_t current_top =
+      (a1->status_word & X87StatusWordFlag::kTopOfStack) >> 11;
+
+  // Decrement the top of stack pointer (wrapping from 0 to 7)
+  uint16_t new_top = (current_top - 1) & 7;
+
+  // Clear C1
+  a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
+  // Clear the top of stack bits and set the new value
+  a1->status_word =
+      (a1->status_word & ~X87StatusWordFlag::kTopOfStack) | (new_top << 11);
 }
+#else
+X87_TRAMPOLINE_ARGS(void, x87_fdecstp, (X87State * a1), x9);
+#endif
 
 #if defined(X87_FDIV_ST)
 void x87_fdiv_ST(X87State *a1, unsigned int st_offset_1,
@@ -755,10 +825,6 @@ void x87_fidivr(X87State *a1, int a2) {
 X87_TRAMPOLINE_ARGS(void, x87_fidivr, (X87State * a1, int a2), x9);
 #endif
 
-// Converts the signed-integer source operand into double extended-precision
-// floating-point format and pushes the value onto the FPU register stack. The
-// source operand can be a word, doubleword, or quadword integer. It is loaded
-// without rounding errors. The sign of the source operand is preserved.
 #if defined(X87_FILD)
 void x87_fild(X87State *a1, int64_t value) {
 
@@ -794,8 +860,20 @@ X87_TRAMPOLINE_ARGS(void, x87_fimul, (X87State * a1, int a2), x9);
 #endif
 
 void x87_fincstp(X87State *a1) {
-  MISSING(1, "x87_fincstp\n", 13);
-  orig_x87_fincstp(a1);
+  LOG(1, "x87_fincstp\n", 13);
+
+  // Clear condition code 1 (C1)
+  a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
+
+  // Extract the TOP field (bits 11-13)
+  uint16_t top = (a1->status_word & X87StatusWordFlag::kTopOfStack) >> 11;
+
+  // Increment TOP with wrap-around (values 0-7)
+  top = (top + 1) & 0x7;
+
+  // Clear old TOP value and set the new one
+  a1->status_word &= ~X87StatusWordFlag::kTopOfStack; // Clear TOP field
+  a1->status_word |= (top << 11);                     // Set new TOP value
 }
 
 #if defined(X87_FIST_I16)
@@ -1255,94 +1333,113 @@ void x87_fpatan(X87State *a1) {
 X87_TRAMPOLINE_ARGS(void, x87_fpatan, (X87State * a1), x9);
 #endif
 
-// Replace ST(0) with the remainder obtained from dividing ST(0) by ST(1).
-// Computes the remainder obtained from dividing the value in the ST(0) register
-// (the dividend) by the value in the ST(1) register (the divisor or modulus),
-// and stores the result in ST(0). The remainder represents the following value:
-// Remainder := ST(0) − (Q ∗ ST(1)) Here, Q is an integer value that is obtained
-// by truncating the floating-point number quotient of [ST(0) / ST(1)] toward
-// zero. The sign of the remainder is the same as the sign of the dividend. The
-// magnitude of the remainder is less than that of the modulus, unless a partial
-// remainder was computed (as described below). This instruction produces an
-// exact result; the inexact-result exception does not occur and the rounding
-// control has no effect. The following table shows the results obtained when
-// computing the remainder of various classes of numbers, assuming that
-// underflow does not occur.
+
 #if defined(X87_FPREM)
 void x87_fprem(X87State *a1) {
   SIMDGuard simd_guard;
-
   LOG(1, "x87_fprem\n", 11);
 
-  // Clear condition code bits initially
-  a1->status_word &= ~(
-      X87StatusWordFlag::kConditionCode0 | X87StatusWordFlag::kConditionCode1 |
-      X87StatusWordFlag::kConditionCode2 | X87StatusWordFlag::kConditionCode3);
+  // 1) Clear CC0–CC3
+  a1->status_word &=
+      ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
 
-  auto st0 = a1->get_st(0);
-  auto st1 = a1->get_st(1);
+  double st0 = a1->get_st(0);
+  double st1 = a1->get_st(1);
 
-  // simple_printf("ST0=%f ST1=%f\n", st0, st1);
-
-  // Handle special cases
+  // 2) Special cases: NaN/div0/∞ → #IA, ∞ divisor → pass through
   if (isnan(st0) || isnan(st1) || isinf(st0) || st1 == 0.0) {
     a1->set_st(0, std::numeric_limits<double>::quiet_NaN());
-    a1->status_word |= X87StatusWordFlag::kInvalidOperation;
+    a1->status_word |= kInvalidOperation;
     return;
   }
-
   if (isinf(st1)) {
-    a1->set_st(0, st0);
+    // remainder = dividend; no exception
     return;
   }
 
-  // Calculate raw division
-  auto raw_div = st0 / st1;
-  // simple_printf("raw division=%f\n", raw_div);
+  // 3) Compute truncated quotient and remainder
+  double rawDiv = st0 / st1;
+  double truncDiv = std::trunc(rawDiv); // Q = trunc(ST0/ST1)
+  int q = static_cast<int>(truncDiv);
+  double rem = std::fmod(st0, st1); // rem = ST0 - Q*ST1
+  a1->set_st(0, rem);
 
-  // Calculate quotient by truncating toward zero
-  auto truncated = std::trunc(raw_div);
-  int64_t quotient = static_cast<int64_t>(truncated);
-  // simple_printf("truncated=%f quotient=%d\n", truncated, quotient);
+  // 4) CC0, CC1, CC3 ← low bits of Q (Q2→CC0, Q0→CC1, Q1→CC3)
+  if (q & 0x4)
+    a1->status_word |= kConditionCode0;
+  if (q & 0x1)
+    a1->status_word |= kConditionCode1;
+  if (q & 0x2)
+    a1->status_word |= kConditionCode3;
 
-  // Calculate remainder
-  auto result = st0 - (static_cast<double>(quotient) * st1);
-  // simple_printf("final result=%f\n", result);
-
-  // Set condition code bits based on quotient least significant bits
-  if (quotient & 1)
-    a1->status_word |= X87StatusWordFlag::kConditionCode1;
-  if (quotient & 2)
-    a1->status_word |= X87StatusWordFlag::kConditionCode3;
-  if (quotient & 4)
-    a1->status_word |= X87StatusWordFlag::kConditionCode0;
-
-  // C2=0 indicates complete remainder
-  // Convert to unsigned for comparison
-  uint64_t abs_quotient = (quotient >= 0) ? quotient : -quotient;
-  if (abs_quotient < (1ULL << 63)) { // Use 63 bits to avoid overflow
-    a1->status_word &= ~X87StatusWordFlag::kConditionCode2;
-  } else {
-    a1->status_word |= X87StatusWordFlag::kConditionCode2;
+  // 5) CC2 “incomplete” if exponent gap > 0
+  //    D = E0 – E1; E = std::ilogb(x)
+  int e0 = std::ilogb(st0);
+  int e1 = std::ilogb(st1);
+  int D = e0 - e1;
+  if (D > 0) {
+    a1->status_word |= kConditionCode2;
+    // (optional) you could iterate: rem -= std::ldexp(trunc(rem/st1), D);
   }
-  // simple_printf("final result=%f\n", result);
-
-  a1->set_st(0, result);
 }
 #else
 X87_TRAMPOLINE_ARGS(void, x87_fprem, (X87State * a1), x9);
 #endif
 
+
+#if defined(X87_FPREM1)
 void x87_fprem1(X87State *a1) {
-  MISSING(1, "x87_fprem1\n", 12);
-  orig_x87_fprem1(a1);
+  SIMDGuard simd_guard;
+  LOG(1, "x87_fprem1\n", 12);
+
+  // 1) clear condition-code bits CC0–CC3
+  a1->status_word &=
+      ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
+
+  double st0 = a1->get_st(0);
+  double st1 = a1->get_st(1);
+
+  // 2) special cases: NaN/div0/∞ → #IA or pass through
+  if (isnan(st0) || isnan(st1) || isinf(st0) || st1 == 0.0) {
+    a1->set_st(0, std::numeric_limits<double>::quiet_NaN());
+    a1->status_word |= kInvalidOperation;
+    return;
+  }
+  if (isinf(st1)) {
+    // remainder = dividend; no exception
+    return;
+  }
+
+  // 3) IEEE-754 remainder with nearest-integer quotient
+  int q;
+  double rem = std::remquo(st0, st1, &q);
+  // rem = ST0 – q*ST1, where q = round-to-nearest(ST0/ST1), ties-to-even
+  a1->set_st(0, rem);
+
+  // 4) CC0, CC1, CC3 from the three low bits of q:
+  //    Q2→CC0, Q0→CC1, Q1→CC3
+  if (q & 0x4)
+    a1->status_word |= kConditionCode0;
+  if (q & 0x1)
+    a1->status_word |= kConditionCode1;
+  if (q & 0x2)
+    a1->status_word |= kConditionCode3;
+
+  // 5) CC2 = “incomplete” flag based on exponent diff D = E0 – E1
+  int e0 = std::ilogb(st0); // unbiased exponent of st0
+  int e1 = std::ilogb(st1); // unbiased exponent of st1
+  int D = e0 - e1;
+  if (D >= 64) {
+    a1->status_word |= kConditionCode2;
+    // (optional) do the “partial” reduction loop per spec if you want
+    // hardware-accurate step-wise remainder
+  }
+  // else D<64 ⇒ CC2 stays clear (complete reduction)
 }
-// Computes the approximate tangent of the source operand in register ST(0),
-// stores the result in ST(0), and pushes a 1.0 onto the FPU register stack. The
-// source operand must be given in radians and must be less than ±263. The
-// following table shows the unmasked results obtained when computing the
-// partial tangent of various classes of numbers, assuming that underflow does
-// not occur.
+#else
+X87_TRAMPOLINE_ARGS(void, x87_fprem1, (X87State * a1), x9);
+#endif
+
 #if defined(X87_FPTAN)
 void x87_fptan(X87State *a1) {
   SIMDGuard simd_guard;
@@ -1369,9 +1466,6 @@ void x87_fptan(X87State *a1) {
 X87_TRAMPOLINE_ARGS(void, x87_fptan, (X87State * a1), x9);
 #endif
 
-// Rounds the source value in the ST(0) register to the nearest integral value,
-// depending on the current rounding mode (setting of the RC field of the FPU
-// control word), and stores the result in ST(0).
 #if defined(X87_FRNDINT)
 void x87_frndint(X87State *a1) {
   SIMDGuard simd_guard;
@@ -1409,13 +1503,6 @@ void x87_frndint(X87State *a1) {
 X87_TRAMPOLINE_ARGS(void, x87_frndint, (X87State * a1), x9);
 #endif
 
-// Truncates the value in the source operand (toward 0) to an integral value and
-// adds that value to the exponent of the destination operand. The destination
-// and source operands are floating-point values located in registers ST(0) and
-// ST(1), respectively. This instruction provides rapid multiplication or
-// division by integral powers of 2. The following table shows the results
-// obtained when scaling various classes of numbers, assuming that neither
-// overflow nor underflow occurs.
 #if defined(X87_FSCALE)
 void x87_fscale(X87State *state) {
   SIMDGuard simd_guard;
@@ -1467,20 +1554,6 @@ void x87_fsin(X87State *a1) {
 X87_TRAMPOLINE_ARGS(void, x87_fsin, (X87State * a1), x9);
 #endif
 
-// Compute the sine and cosine of ST(0); replace ST(0) with the approximate
-// sine, and push the approximate cosine onto the register stack.
-/*
-IF ST(0) < 2^63
-    THEN
-        C2 := 0;
-        TEMP := fcos(ST(0)); // approximation of cosine
-        ST(0) := fsin(ST(0)); // approximation of sine
-        TOP := TOP − 1;
-        ST(0) := TEMP;
-    ELSE (* Source operand out of range *)
-        C2 := 1;
-FI;
-*/
 #if defined(X87_FSINCOS)
 void x87_fsincos(X87State *a1) {
   SIMDGuardFull simd_guard;
@@ -1807,8 +1880,6 @@ X87_TRAMPOLINE_ARGS(void, x87_fucom,
                     x9);
 #endif
 
-// Compare ST(0) with ST(i), check for ordered values, set status flags
-// accordingly, and pop register stack.
 #if defined(X87_FUCOMI)
 uint32_t x87_fucomi(X87State *state, unsigned int st_offset, bool pop_stack) {
   SIMDGuard simd_guard;
@@ -1852,25 +1923,6 @@ X87_TRAMPOLINE_ARGS(uint32_t, x87_fucomi,
                     x9);
 #endif
 
-/*
-C1 := sign bit of ST; (* 0 for positive, 1 for negative *)
-CASE (class of value or number in ST(0)) OF
-    Unsupported:C3, C2, C0 := 000;
-    NaN:
-        C3, C2, C0 := 001;
-    Normal:
-        C3, C2, C0 := 010;
-    Infinity:
-        C3, C2, C0 := 011;
-    Zero:
-        C3, C2, C0 := 100;
-    Empty:
-        C3, C2, C0 := 101;
-    Denormal:
-        C3, C2, C0 := 110;
-ESAC;
-
-*/
 #if defined(X87_FXAM)
 void x87_fxam(X87State *a1) {
   SIMDGuard simd_guard;

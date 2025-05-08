@@ -123,7 +123,12 @@ using x87_fadd_f64_t = decltype(&x87_fadd_f64);
 void x87_fbld(X87State*, unsigned long long, unsigned long long);
 using x87_fbld_t = decltype(&x87_fbld);
 
-void x87_fbstp(X87State const*);
+struct uint128_t {
+  uint64_t low;
+  uint64_t high;
+};
+
+uint128_t x87_fbstp(X87State*);
 using x87_fbstp_t = decltype(&x87_fbstp);
 
 void x87_fchs(X87State*);
