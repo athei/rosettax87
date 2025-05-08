@@ -1,48 +1,36 @@
 #pragma once
 
 #include <cstdint>
+#define ENABLE_SIMD_GUARD
 
 struct SIMDGuard {
-  using SIMDRegister_t = uint8_t[16];
+  using SIMDRegister_t = uint8_t[8];
 
   SIMDGuard() {
+#if defined(ENABLE_SIMD_GUARD)
     // Save the current SIMD register values to member variables
-    asm volatile("str q0, [%0]\n\t"
-                 "str q1, [%1]\n\t"
-                 "str q2, [%2]\n\t"
-                 "str q3, [%3]\n\t"
-                 "str q4, [%4]\n\t"
-                 "str q5, [%5]\n\t"
-                 "str q6, [%6]\n\t"
-                 "str q7, [%7]\n\t"
-                 :
-                 : "r"(v0), "r"(v1), "r"(v2), "r"(v3), "r"(v4), "r"(v5),
-                   "r"(v6), "r"(v7)
+    asm volatile("stp  d0,  d1, [%0, # 0]\n\t" // stores 2×8 B = 16 B
+                 "stp  d2,  d3, [%0, #16]\n\t"
+                 "stp  d4,  d5, [%0, #32]\n\t"
+                 "stp  d6,  d7, [%0, #48]\n\t"
+                 : /* no outputs */
+                 : "r"(buf)
                  : "memory");
+#endif
   }
 
   ~SIMDGuard() {
+#if defined(ENABLE_SIMD_GUARD)
     // Restore the saved SIMD register values
-    asm volatile("ldr q0, [%0]\n\t"
-                 "ldr q1, [%1]\n\t"
-                 "ldr q2, [%2]\n\t"
-                 "ldr q3, [%3]\n\t"
-                 "ldr q4, [%4]\n\t"
-                 "ldr q5, [%5]\n\t"
-                 "ldr q6, [%6]\n\t"
-                 "ldr q7, [%7]\n\t"
+    asm volatile("ldp  d6,  d7, [%0, #48]\n\t"
+                 "ldp  d4,  d5, [%0, #32]\n\t"
+                 "ldp  d2,  d3, [%0, #16]\n\t"
+                 "ldp  d0,  d1, [%0, # 0]\n\t"
                  :
-                 : "r"(v0), "r"(v1), "r"(v2), "r"(v3), "r"(v4), "r"(v5),
-                   "r"(v6), "r"(v7)
-                 : "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "memory");
+                 : "r"(buf)
+                 : "memory");
+#endif
   }
 
-  SIMDRegister_t v0;
-  SIMDRegister_t v1;
-  SIMDRegister_t v2;
-  SIMDRegister_t v3;
-  SIMDRegister_t v4;
-  SIMDRegister_t v5;
-  SIMDRegister_t v6;
-  SIMDRegister_t v7;
+  alignas(16) SIMDRegister_t buf[8];
 };
