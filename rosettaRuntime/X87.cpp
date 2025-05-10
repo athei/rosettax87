@@ -4,8 +4,9 @@
 #include "Log.h"
 #include "SIMDGuard.h"
 #include "X87State.h"
-
 #include "openlibm_math.h"
+
+#include <bit>
 
 #define X87_F2XM1
 #define X87_FABS
@@ -222,7 +223,7 @@ void x87_fadd_f32(X87State *a1, unsigned int fp32) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&fp32);
+  auto value = std::bit_cast<float>(fp32);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 + value);
@@ -239,7 +240,7 @@ void x87_fadd_f64(X87State *a1, unsigned long long a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 + value);
@@ -461,7 +462,7 @@ void x87_fcom_f32(X87State *a1, unsigned int fp32, bool pop) {
 
   LOG(1, "x87_fcom_f32\n", 14);
   auto st0 = a1->get_st(0);
-  auto src = *reinterpret_cast<float *>(&fp32);
+  auto src = std::bit_cast<float>(fp32);
 
   a1->status_word &=
       ~(kConditionCode0 | kConditionCode1 | kConditionCode2 | kConditionCode3);
@@ -496,7 +497,7 @@ void x87_fcom_f64(X87State *a1, unsigned long long fp64, bool pop) {
 
   LOG(1, "x87_fcom_f64\n", 14);
   auto st0 = a1->get_st(0);
-  auto src = *reinterpret_cast<double *>(&fp64);
+  auto src = std::bit_cast<double>(fp64);
 
   a1->status_word &= ~(kConditionCode0 | kConditionCode2 | kConditionCode3);
 
@@ -638,7 +639,7 @@ void x87_fdiv_f32(X87State *a1, unsigned int a2) {
   LOG(1, "x87_fdiv_f32\n", 14);
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&a2);
+  auto value = std::bit_cast<float>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 / value);
@@ -655,7 +656,7 @@ void x87_fdiv_f64(X87State *a1, unsigned long long a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 / value);
@@ -699,7 +700,7 @@ void x87_fdivr_f32(X87State *a1, unsigned int a2) {
   LOG(1, "x87_fdivr_f32\n", 15);
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&a2);
+  auto value = std::bit_cast<float>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, value / st0);
@@ -715,7 +716,7 @@ void x87_fdivr_f64(X87State *a1, unsigned long long a2) {
   LOG(1, "x87_fdivr_f64\n", 15);
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, value / st0);
@@ -1210,7 +1211,7 @@ void x87_fld_fp32(X87State *a1, unsigned int a2) {
   // Push new value onto stack, get reference to new top
   a1->push();
 
-  a1->set_st(0, *reinterpret_cast<float *>(&a2));
+  a1->set_st(0, std::bit_cast<float>(a2));
 }
 #else
 X87_TRAMPOLINE_ARGS(void, x87_fld_fp32, (X87State * a1, unsigned int a2), x9);
@@ -1225,7 +1226,7 @@ void x87_fld_fp64(X87State *a1, unsigned long long a2) {
   // Push new value onto stack, get reference to new top
   a1->push();
 
-  a1->set_st(0, *reinterpret_cast<double *>(&a2));
+  a1->set_st(0, std::bit_cast<double>(a2));
 }
 #else
 X87_TRAMPOLINE_ARGS(void, x87_fld_fp64, (X87State * a1, unsigned long long a2),
@@ -1281,7 +1282,7 @@ void x87_fmul_f32(X87State *a1, unsigned int fp32) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&fp32);
+  auto value = std::bit_cast<float>(fp32);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 * value);
@@ -1298,7 +1299,7 @@ void x87_fmul_f64(X87State *a1, unsigned long long a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 * value);
@@ -1521,7 +1522,7 @@ void x87_fscale(X87State *state) {
   // Scale ST(0) by 2^scale using bit manipulation for integer powers
   int32_t exponent = scale + 1023; // IEEE-754 bias
   uint64_t scaleFactor = static_cast<uint64_t>(exponent) << 52;
-  double factor = *reinterpret_cast<double *>(&scaleFactor);
+  double factor = std::bit_cast<double>(scaleFactor);
 
   // Multiply ST(0) by scale factor
   double result = st0 * factor;
@@ -1635,7 +1636,7 @@ X87ResultStatusWord x87_fst_fp32(X87State const *a1) {
 
   auto [value, status_word] = a1->get_st_const32(0);
   float tmp = value;
-  return {*reinterpret_cast<uint32_t *>(&tmp), status_word};
+  return {std::bit_cast<uint32_t>(tmp), status_word};
 }
 #else
 X87_TRAMPOLINE_ARGS(X87ResultStatusWord, x87_fst_fp32, (X87State const *a1),
@@ -1651,7 +1652,7 @@ X87ResultStatusWord x87_fst_fp64(X87State const *a1) {
   // Create temporary double to ensure proper value representation
   auto [value, status_word] = a1->get_st_const(0);
   double tmp = value;
-  return {*reinterpret_cast<uint64_t *>(&tmp), status_word};
+  return {std::bit_cast<uint64_t>(tmp), status_word};
 }
 #else
 X87_TRAMPOLINE_ARGS(X87ResultStatusWord, x87_fst_fp64, (X87State const *a1),
@@ -1668,7 +1669,7 @@ X87Float80StatusWordResult x87_fst_fp80(X87State const *a1) {
   auto [value, status_word] = a1->get_st_const(0);
 
   float tmp = value;
-  uint32_t float32 = *reinterpret_cast<uint32_t *>(&tmp);
+  uint32_t float32 = std::bit_cast<uint32_t>(tmp);
 
   // Extract components from float32
   uint32_t mantissa = float32 & 0x7FFFFF; // 23 bits
@@ -1755,7 +1756,7 @@ void x87_fsub_f32(X87State *a1, unsigned int a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&a2);
+  auto value = std::bit_cast<float>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 - value);
@@ -1772,7 +1773,7 @@ void x87_fsub_f64(X87State *a1, unsigned long long a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, st0 - value);
@@ -1819,7 +1820,7 @@ void x87_fsubr_f32(X87State *a1, unsigned int a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<float *>(&a2);
+  auto value = std::bit_cast<float>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, value - st0);
@@ -1836,7 +1837,7 @@ void x87_fsubr_f64(X87State *a1, unsigned long long a2) {
 
   a1->status_word &= ~X87StatusWordFlag::kConditionCode1;
 
-  auto value = *reinterpret_cast<double *>(&a2);
+  auto value = std::bit_cast<double>(a2);
   auto st0 = a1->get_st(0);
 
   a1->set_st(0, value - st0);
