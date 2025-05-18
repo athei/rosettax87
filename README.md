@@ -8,7 +8,7 @@ This is an experimental project that modifies Apple's Rosetta technology to use 
 
 ## Prerequisites
 
-- macOS 15.4.1 or compatible
+- macOS 15.5 or compatible
 - C compiler (clang)
 - CMake
 - Administrator privileges (for running helper service)
@@ -102,14 +102,6 @@ Average time: 48517 ticks
 
 ## Technical Details
 
-### Dependencies
-
-This project is compatible with Mac OS 15.4.1:
-```
-╰─$ md5 runtime
-MD5 (runtime) = c6b7650638eaf4d15bd56b9aae282b11
-```
-
 ### Research Notes
 
 If you want to examine `runtime` and `libRosettaRuntime` using `IDA PRO`, you need to use `chain_fixup.py`. 
@@ -118,28 +110,29 @@ If you want to examine `runtime` and `libRosettaRuntime` using `IDA PRO`, you ne
 
 ### Windows Applications Through Wine
 
-If you want to run a Windows application through wine, you can try this command (requires CrossOver, SIP disabled):
-```╰─$ ./rosettax87 /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader PATH_TO_BINARY.exe```
+You can use the brew `wine@devel` cask with RosettaHack x87. It supports launching Windows applications through Wine with an environment variable `ROSETTA_X87_PATH`. 
 
-> ### 💡 Tip: Running Without Disabling SIP
-> 
-> If you don't want to turn off SIP, you can remove the code signature of wineloader:
->
-> 1. **Create a copy of wineloader:**
->    ```bash
->    cp /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2
->    ```
->
-> 2. **Remove signature:**
->    ```bash
->    codesign --remove-signature /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2
->    ```
->
-> 3. **Now point rosettax87 to the copy:**
->    ```bash
->    ./rosettax87 /Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted\ Application/wineloader2 PATH_TO_BINARY.exe
->    ```
+1. Install `wine@devel` using [Homebrew](https://brew.sh/) 
+
+```bash
+brew install --cask wine@devel
+```
+
+2. To permanently set the environment variable, add the following to your `~/.bashrc` or `~/.zshrc` file:
+```bash
+export ROSETTA_X87_PATH=/Path/To/rosettax87
+```
+
+3. Run rosettax87 as sudo in a separate terminal
+```bash
+sudo $ROSETTA_X87_PATH
+```
+
+4. Run the Windows application
+```bash
+wine PATH_TO_BINARY.exe
+```
 
 ## License
 
-This project is experimental and provided for research purposes. Use at your own risk.
+This project is licensed under `MIT`.
